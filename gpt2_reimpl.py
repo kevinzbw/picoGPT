@@ -33,7 +33,7 @@ def ffn(x, c_fc, c_proj):  # [n_seq, n_embd] -> [n_seq, n_embd]
 # [n_q, d_k], [n_k, d_k], [n_k, d_v], [n_q, n_k] -> [n_q, d_v]
 def attention(q, k, v, mask):
     k_t = np.transpose(k, [0, 2, 1])
-    return softmax(q @ k_t + mask) @ v
+    return softmax(q @ k_t / np.sqrt(q.shape[-1]) + mask) @ v
 
 
 def mha(x, c_attn, c_proj, n_head):  # [n_seq, n_embd] -> [n_seq, n_embd]
@@ -70,10 +70,10 @@ def mha(x, c_attn, c_proj, n_head):  # [n_seq, n_embd] -> [n_seq, n_embd]
 # [n_seq, n_embd] -> [n_seq, n_embd]
 def transformer_block(x, mlp, attn, ln_1, ln_2, n_head):
     # multi-head causal self attention
-    x = mha(layer_norm(x, **ln_1), **attn, n_head=n_head)
+    x = x + mha(layer_norm(x, **ln_1), **attn, n_head=n_head)
 
     # position-wise feed forward network
-    x = ffn(layer_norm(x, **ln_2), **mlp)
+    x = x + ffn(layer_norm(x, **ln_2), **mlp)
     return x
 
 
